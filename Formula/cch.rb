@@ -5,9 +5,9 @@ class Cch < Formula
   sha256 "198875a4414800d5878b5103a03ce0da20ac57543089c18526f09770515b14fe"
   license "MIT"
 
-  depends_on :macos
   depends_on "fzf"
   depends_on "jq"
+  depends_on :macos
   depends_on "ripgrep"
 
   def install
