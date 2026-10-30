@@ -1,0 +1,38 @@
+name: bump cch
+
+# Check daily for a new cch release; can also be run by hand from the Actions tab
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+# Only this repository is written to, so the built-in token is enough and no personal token is needed
+permissions:
+  contents: write
+
+jobs:
+  bump:
+    runs-on: macos-latest
+    steps:
+      # Pinned to a commit rather than a tag, which can be moved
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Update the formula to the latest release
+        id: bump
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "version=$(.github/scripts/bump-cch.sh)" >> "$GITHUB_OUTPUT"
+      # Commit only a formula that passes audit and actually installs
+      - name: Audit and install
+        if: steps.bump.outputs.version != ''
+        run: |
+          brew tap nodematerial/tap "$PWD"
+          brew audit --strict --online nodematerial/tap/cch
+          brew install nodematerial/tap/cch
+          brew test nodematerial/tap/cch
+      - name: Commit
+        if: steps.bump.outputs.version != ''
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "feat: update cch to ${{ steps.bump.outputs.version }}"
+          git push
