@@ -26,6 +26,8 @@ jobs:
         if: steps.bump.outputs.version != ''
         run: |
           brew tap nodematerial/tap "$PWD"
+          # Homebrew refuses to load formulae from taps that are not trusted
+          brew trust nodematerial/tap
           brew audit --strict --online nodematerial/tap/cch
           brew install nodematerial/tap/cch
           brew test nodematerial/tap/cch
