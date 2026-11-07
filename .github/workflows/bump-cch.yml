@@ -6,31 +6,51 @@ on:
     - cron: "0 0 * * *"
   workflow_dispatch:
 
-# Only this repository is written to, so the built-in token is enough and no personal token is needed
-permissions:
-  contents: write
-
 jobs:
-  bump:
-    runs-on: macos-latest
+  # Point the formula at the latest release in a scratch checkout and check it on macOS and Linux.
+  # The bump script is deterministic (same release, same tarball), so each job computes the same formula
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
     steps:
       # Pinned to a commit rather than a tag, which can be moved
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Update the formula to the latest release
+        id: bump
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "version=$(.github/scripts/bump-cch.sh)" >> "$GITHUB_OUTPUT"
+      # Homebrew is preinstalled on Ubuntu runners but not on PATH
+      - if: steps.bump.outputs.version != '' && runner.os == 'Linux'
+        run: echo "/home/linuxbrew/.linuxbrew/bin" >> "$GITHUB_PATH"
+      # Commit only a formula that passes audit, installs and starts
+      - name: Audit, install and start
+        if: steps.bump.outputs.version != ''
+        run: .github/scripts/verify-cch.sh
+
+  # Only this repository is written to, so the built-in token is enough and no personal token is needed
+  commit:
+    needs: verify
+    if: needs.verify.outputs.version != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Update the formula to the latest release
         id: bump
         env:
           GH_TOKEN: ${{ github.token }}
         run: echo "version=$(.github/scripts/bump-cch.sh)" >> "$GITHUB_OUTPUT"
-      # Commit only a formula that passes audit and actually installs
-      - name: Audit and install
-        if: steps.bump.outputs.version != ''
-        run: |
-          brew tap nodematerial/tap "$PWD"
-          # Homebrew refuses to load formulae from taps that are not trusted
-          brew trust nodematerial/tap
-          brew audit --strict --online nodematerial/tap/cch
-          brew install nodematerial/tap/cch
-          brew test nodematerial/tap/cch
       - name: Commit
         if: steps.bump.outputs.version != ''
         run: |
