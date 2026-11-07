@@ -7,7 +7,6 @@ class Cch < Formula
 
   depends_on "fzf"
   depends_on "jq"
-  depends_on :macos
   depends_on "ripgrep"
 
   def install
