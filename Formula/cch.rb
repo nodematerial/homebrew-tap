@@ -1,8 +1,8 @@
 class Cch < Formula
   desc "Browse, search and resume Claude Code conversations across projects"
   homepage "https://github.com/nodematerial/cch"
-  url "https://github.com/nodematerial/cch/archive/refs/tags/v0.3.1.tar.gz"
-  sha256 "4d983966255249c06dea3ef1a6d186520cb9497538304d56a32f3b46cfa0cc4c"
+  url "https://github.com/nodematerial/cch/archive/refs/tags/v0.3.2.tar.gz"
+  sha256 "a5562be0ea4febdbf9066c42677302ec6508f803dd46fcaccf949df05042e504"
   license "MIT"
 
   depends_on "fzf"
